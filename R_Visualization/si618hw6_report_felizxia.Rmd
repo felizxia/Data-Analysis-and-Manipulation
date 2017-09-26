@@ -1,0 +1,50 @@
+---
+title: "hw6_felizxia"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Step 1: Load data
+First the provided TSV data file is loaded into R using the read.table() function. Display the first 15 rows
+of the data frame:
+```{r echo=FALSE}
+library(ggplot2)
+setwd('/Users/rita/Google Drive/618/homework/assignment_files/hw6')
+
+data<- read.table('/Users/rita/Google Drive/618/homework/assignment_files/hw6/countrydata_withregion.tsv',sep="\t",quote = "", row.names = NULL, header = FALSE, comment.char = "",fill = TRUE,fileEncoding = "UTF-8-BOM")
+#x<- count.fields('/Users/rita/Google Drive/618/homework/assignment_files/hw6/countrydata_withregion.tsv',sep="\t",quote = "")
+colnames(data)<-c("Country","Region","Area","Population")
+data<- data[-1,]
+head(data,15)
+
+```
+Step 2: Scatter plot of log transformed data
+```{r echo=FALSE, fig.width=7}
+x_value<- log(as.numeric(as.matrix(data['Area'])))
+y_value<- log(as.numeric(as.matrix(data['Population'])))
+#ggplot(data,aes(x=x_value,y=y_value))+geom_point()+xlab('log(area)')+ylab('log(population)')
+qplot(x_value, y_value,data,xlab = 'log(area)', ylab='log(population)' )
+```
+Step 3: Data aggregation by region
+```{r echo=FALSE }
+#sum not meaningful for factors
+data[] <- lapply(data, function(x) type.convert(as.character(x)))
+funct<- aggregate(data$Area,by=list(area=data$Region),FUN=sum)
+pie_r_1<-pie(x=as.vector(as.matrix(funct['x'])),labels = as.character(as.matrix(funct['area'])), main = 'Area of Regions')
+#pie_r_1
+funct2<- aggregate(data$Population,by=list(population=data$Region),FUN = function(x){sum(as.numeric(x))})
+pie_r_2<-pie(x=as.vector(as.matrix(funct2['x'])),labels = as.character(as.matrix(funct2['population'])), main = 'Population of Regions')
+#pie_r_2
+```
+Step 4: Visulization of Population per sq km of Regions
+```{r echo=FALSE, fig.width=7}
+newdata<- data.frame(region=levels(funct$area),densities= funct2$x/funct$x)
+newdata$region<-reorder(newdata$region,-newdata$densities,FUN=max)
+head(newdata[order(newdata$region),])
+
+qplot(x=newdata$region,weight=newdata$densities,data=newdata,xlab = 'Region', ylab = 'Population per sq km of Regions')+ theme(axis.text.x = element_text(angle = 60, hjust =1))
+```
