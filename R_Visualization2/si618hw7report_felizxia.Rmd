@@ -1,0 +1,93 @@
+---
+title: "si618hw7report_youruniquename"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r cars}
+require(data.table)
+library(ggplot2)
+setwd("/Users/rita/Google Drive/618/homework/assignment_files/hw7")
+json= read.table('/Users/rita/Google Drive/618/homework/assignment_files/hw7/businessdata_desired_output.tsv',header = TRUE, sep='\t', quote = "", row.names = NULL,  comment.char = "",fill = TRUE,fileEncoding = "UTF-8-BOM")
+#json= fread('/Users/rita/Google Drive/618/homework/assignment_files/hw7/businessdata_desired_output.tsv',header = TRUE, sep='\t', quote = "")
+json<- json[complete.cases(json),] 
+json<- setDT(json)
+summary(json)
+```
+
+```{r echo=FALSE, fig.width=8}
+json$stars<- as.integer(json$stars)
+library(plyr)
+# basically use "group by function" to calculate each varaibles frequencies
+
+#star_result<-json[,.N,by=list(star=json$stars,state=json$state)]
+#star_result<- star_result[order(star_result$state,star_result$star)]
+# another method: use count
+star_result<- count(json,vars=c("state","stars"))
+
+#Palette <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7","#999999","#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7","#999999")
+state<- factor(star_result$state)
+qplot(x=star_result$star, weight= star_result$freq,data=star_result,facets = .~state,xlab="stars", main="Histograms of Star Ratings",geom = "histogram",binwidth=1,fill=state,alpha=I(0.5))
+# calculate densities
+sum<-aggregate(star_result$freq,by=list(state_t=star_result$state),FUN=sum)
+star_result['total']<- rep(sum$x,each = 5)
+new_t<- data.frame(state=levels(star_result$state),densities=star_result$freq/star_result$total)
+qplot(x=star_result$star, weight= new_t$densities,data=star_result,facets = .~state,xlab="stars", main="Histograms of Star Ratings",geom = "histogram",binwidth=1,fill=state,alpha=I(0.5))
+# use stat="identity" if we already calculate the result
+#ggplot(star_result,aes(x=stars))+geom_bar(aes(y=freq),stat="identity")+facet_grid( .~ state)
+```
+
+
+```{r pressure, echo=FALSE}
+qplot(json$review_count,xlab="Review Counts",geom = "histogram",binwidth=1,main="Histograms of Review Counts")
+zoom_c<- subset(json,json$review_count<=200)[,'review_count']
+qplot(zoom_c$review_count,xlab="Review Counts",geom = "histogram",binwidth=1,main="Histograms of Review Counts (Filtered)")
+```
+
+```{r echo=FALSE}
+json= fread('/Users/rita/Google Drive/618/homework/assignment_files/hw7/businessdata_desired_output.tsv',header = TRUE, sep='\t', quote = "")
+json<- json[complete.cases(json),] 
+state<-factor(json$state)
+qplot(x=json$state, y= json$stars,geom = 'boxplot',fill=state,alpha=I(0.5))
+box_order<- json[order(-json$stars,json$state)]
+#[,c("stars","state")]
+states<- factor(box_order$state)
+qplot(x=box_order$state, y= box_order$stars,geom = 'jitter',colour=states,alpha=I(0.5),main='Star Ratings by States',xlab=NULL,ylab='Stars')
+```
+```{r echo=FALSE}
+#sum$state_t<- as.factor(sum$state_t)
+#qplot(x=sum$state_t,weight=sum$x,data= sum,geom = "histogram",binwidth=1,alpha=I(0.5))
+
+review<- aggregate(json$review_count, by=list(star=as.integer(json$stars)),FUN=sum)
+state<- factor(json$state)
+qplot(x=json$star,y=json$review_count,data=json, xlab="Stars", ylab="Review Counts",geom = "jitter",alpha=I(0.5),colour=state,colour=2)
+```
+
+
+```{r echo=FALSE}
+
+star_result$state<-reorder(star_result$state,-star_result$total,FUN=max)
+#ggplot(star_result, aes(x=star_result$state)) +geom_bar()
+qplot(x=star_result$state,data=star_result,weight=star_result$total/5,xlab="State",alpha=I(0.8))
+
+```
+
+```{r echo=FALSE}
+result<-json[,rank:=rank(-stars,ties.method="first"),by=list(json$main_category,json$city)]
+head(result[rank<5])
+china<- json[main_category=="Chinese"][,rank:rank(-stars,ties.method = "first"),by=list("city")]
+f_result<-china[rank<6][order(city,rank)]
+```
+
+```{r echo=FALSE}
+mean<-aggregate(json$review_count,by=list(json$state),FUN=mean)
+mean<- mean[order(-mean$x),]
+mean$Group.1<- as.factor(mean$Group.1)
+mean$Group.1<- reorder(mean$Group.1,-mean$x,FUN=max)
+qplot(x=mean$Group.1,data=mean,weight=mean$x,xlab="State",alpha=I(0.8))
+```
+
