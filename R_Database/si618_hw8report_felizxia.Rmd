@@ -1,0 +1,87 @@
+---
+title: "si618hw8report_felizxia"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+```
+knitr::opts_chunk$set(echo = TRUE
+
+
+```{r echo=FALSE}
+library("RSQLite")
+library(ggplot2)
+library(data.table)
+setwd("/Users/rita/Google Drive/618/homework/assignment_files/hw8/si618hw8")
+con = dbConnect(SQLite(), dbname="vehicles.db")
+myQuery <- dbSendQuery(con, "SELECT * FROM Engine")
+my_data <- dbFetch(myQuery, n=-1)
+vehicles<- as.data.table(my_data)
+dbDisconnect(con)
+head(vehicles)
+summary(vehicles)
+```
+
+
+
+```{r echo=FALSE}
+#vehicles<- vehicles[,lapply(.SD,as.factor),by=list(year,model,displ,city08,highway08,comb08)]
+vehicles$make<-as.factor(vehicles$make)
+vehicles$VClass<-as.factor(vehicles$Vclass)
+vehicles$cylinders<-as.factor(vehicles$cylinders)
+vehicles$trany<- as.factor(vehicles$trany)
+summary(vehicles)
+library(plyr)
+
+#got 29 rows but the levels are the same
+
+mm<-vehicles[,.N>40,by=list(Vclass)][V1==TRUE]
+mm$Vclass<- as.character(mm$Vclass)
+filter<-vehicles[Vclass %in% mm$Vclass]
+filter$year<- as.numeric(as.character(filter$year))
+summary(filter)
+```
+
+
+```{r echo=FALSE, fig.width=16,warning=FALSE, message=FALSE}
+option=list(c(levels(filter$Vclass)))
+myplot<- function(i,n){
+  if (n==1){
+    r<- filter[Vclass==i]
+    r1<- aggregate(r$comb08,by=list(maker=r$make,year=r$year),FUN="mean")
+    result1<-ggplot(r1,aes(x=r1$year,y=r1$x,color=r1$make))+geom_line(size=1)+ labs(x = "Year") +labs(y = "Mean combined MPG")+labs(title=i)
+    return(result1)
+  }
+  if (n==2){
+    r2$maker<- as.factor(as.character(r2$maker))
+    r2$maker<- reorder(r2$maker,-r2$x,FUN=max)
+    result2<- ggplot(r2, aes(x=r2$maker,y=r2$x))+geom_histogram(stat='identity',alpha=0.6)+labs(x="Make")+ labs(y = "Mean combined MPG in All Years")+labs(title=i)+ theme(axis.text.x = element_text(angle = 90, hjust =1))
+    return (result2)
+  }
+}
+
+```
+
+```{r echo=FALSE}
+lapply(option[[1]][1],myplot,n=1)
+lapply(option[[1]][1],myplot,n=2)
+
+#~~ till 34
+
+
+
+
+```
+
+```{r echo=FALSE}
+
+r2$maker<- as.factor(as.character(r2$maker))
+    r2$maker<- reorder(r2$maker,-r2$x,FUN=max)
+    result2<- ggplot(r2, aes(x=r2$maker,y=r2$x))+geom_histogram(stat='identity',alpha=0.6)+labs(x="Make")+ labs(y = "Mean combined MPG in All Years")+labs(title=i)+ theme(axis.text.x = element_text(angle = 90, hjust =1))
+
+```
+```{r echo=FALSE}
+#option=list(c("Two Seaters","Vans","Midsize Cars","Large Cars","Small Station Wagons","Midsize-Large Station Wagons","Small Pickup Trucks","Standard Pickup Trucks","Special Purpose Vehicle 2WD","Special Purpose Vehicles","Minicompact Cars","Special Purpose Vehicle 4WD","Midsize Station Wagons","Small Pickup Trucks 2WD","Standard Pickup Trucks 2WD","Standard Pickup Trucks 4WD","Vans, Cargo Type","Vans Passenger Type","Minvan - 2WD","Sport Utility Vehicle - 4WD","Minivan - 4WD","Sport Utility Vehicle - 2WD","Small Pickup Trucks 4WD",))
+
+
+```
